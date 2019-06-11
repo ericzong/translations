@@ -1,6 +1,15 @@
-**YAML多行字符串**
+---
+layout: post
+title: YAML多行字符串：为YAML多行字符串找到正确的语法
+category: 编程语言
+tags: 语言 YAML
+excerpt: 为YAML多行字符串找到正确的语法。
+author: "Eric Zong"
+date: 2019-02-20 15:08
+---
 
-为YAML多行字符串找到正确的语法
+* content
+{:toc}
 
 > 英文原文：[YAML Multiline](https://yaml-multiline.info/)
 
@@ -10,7 +19,7 @@ YAML支持两种格式的字符串：块标量（block scalar）和流标量（f
 
 一个块标量头部有三个部分：
 
-**块样式指示器（Block Style Indicator）**：块样式指示块内的换行符应如何表现。如果希望将它们保留为换行符，应使用字面样式（literal style），用一个管道符号（|）表示。如果你希望它们被空格替换，应使用折叠样式（folded style），用一个右尖括号（>）表示。（在使用折叠样式时，想要得到一个换行符，需要输入两个换行符才会保留一个空白行。带有额外缩进的行不会被折叠。）
+**块样式指示器（Block Style Indicator）**：块样式指示块内的换行符应如何表现。如果希望将它们保留为换行符，应使用字面样式（literal style），用一个管道符号（\|）表示。如果你希望它们被空格替换，应使用折叠样式（folded style），用一个右尖括号（>）表示。（在使用折叠样式时，想要得到一个换行符，需要输入两个换行符才会保留一个空白行。带有额外缩进的行不会被折叠。）
 
 **块裁剪[^1]指示器（Block Chomping Indicator）**：裁剪指示器控制字符串末尾的换行符应该如何处理。默认情况下，会缩减（clip）为字符串末尾的一个换行符。如果要删除所有换行符，需在样式指示器后添加一个减号（-）来删除（strip）它们。缩减（clip）和删除（strip）都会忽略块的末尾实际上有多少换行符；在样式指示器后添加一个加号（+）将保留所有换行符。
 
@@ -39,10 +48,6 @@ YAML支持两种格式的字符串：块标量（block scalar）和流标量（f
 
 包括缩进指示器
 
-
-
-YAML
-
 ```yaml
 example: >2\n
 ··Several lines of text,\n
@@ -65,8 +70,6 @@ plus another line at the end.\n
 
 ## 单引号
 
-YAML
-
 ```yaml
 example: 'Several lines of text,\n
 containing ''single quotes''. Escapes (like \n) don''t do anything.\n
@@ -83,8 +86,6 @@ Newlines can be added by leaving a blank line. Leading whitespace on lines is ig
 ```
 
 ## 双引号
-
-YAML
 
 ```yaml
 example: "Several lines of text,\n
@@ -105,8 +106,6 @@ Newlines can also be added by leaving a blank line. Leading whitespace on lines 
 ```
 
 ## 普通
-
-YAML
 
 ```yaml
 example: Several lines of text,\n

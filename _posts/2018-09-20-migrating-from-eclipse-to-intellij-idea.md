@@ -1,4 +1,15 @@
-**从Eclipse迁移到IntelliJ IDEA**
+---
+layout: post
+title: 从Eclipse迁移到IntelliJ IDEA
+category: 工具
+tags: Eclipse IDEA 工具
+excerpt: 从Eclipse切换到IntelliJ IDEA，尤其是当你已经使用了很久的Eclipse，需要了解这两个IDE之间的一些基本差异，包括它们的用户界面、编译方法、快捷方式、项目配置和其他方面。
+author: "Eric Zong"
+date: 2018-09-20 10:43
+---
+
+* content
+{:toc}
 
 > 英文原文：[Migrating From Eclipse to IntelliJ IDEA](https://www.jetbrains.com/help/idea/migrating-from-eclipse-to-intellij-idea.html)
 
@@ -35,17 +46,17 @@
 
 这意味着您不需要手动切换不同的工作区布局，以执行不同的任务。IDE跟随你的上下文，并自动提供相关工具。
 
-![2-3-01](migrating-from-eclipse-to-intellij-idea.assets/2-3-01.png)
+![2-3-01](../image/migrating-from-eclipse-to-intellij-idea/2-3-01.png)
 
 ##	工具窗口
 
 就像在Eclipse中一样，在IntelliJ IDEA中也有工具窗口。要打开一个工具窗口，只需在工具窗口栏中简单地单击它。 
 
-![2-4-01](migrating-from-eclipse-to-intellij-idea.assets/2-4-01.png)
+![2-4-01](../image/migrating-from-eclipse-to-intellij-idea/2-4-01.png)
 
 如果工具窗口栏是隐藏的，你可以通过在左下角的相应图标上悬停，打开任何工具窗口。
 
-![2-4-02](migrating-from-eclipse-to-intellij-idea.assets/2-4-02.png)
+![2-4-02](../image/migrating-from-eclipse-to-intellij-idea/2-4-02.png)
 
 如果你想让工具窗口栏可见片刻，你可以按Alt键(macOS按Cmd键)两次并按住。
 
@@ -57,12 +68,12 @@
 
 关于工具窗口的另一件事是你可以拖拽、钉住、解钉、依附和分离它们： 
 
-![2-4-03](migrating-from-eclipse-to-intellij-idea.assets/2-4-03.png)
+![2-4-03](../image/migrating-from-eclipse-to-intellij-idea/2-4-03.png)
 
 为了帮助存储/恢复工具窗口的布局，有两个有用的命令：
 
-* Window | Store Current Layout as Default
-* Window | Restore Default Layout(also available via Ctrl+F12)
+* Window \| Store Current Layout as Default
+* Window \| Restore Default Layout(also available via Ctrl+F12)
 
 ## 多窗口
 
@@ -72,11 +83,11 @@
 
 默认情况下，当你在编辑器选项卡之间切换时，IntelliJ IDEA 不会改变工程工具窗口中的选择。但是，你可以在工具窗口设置中启用它：
 
-![2-6-01](migrating-from-eclipse-to-intellij-idea.assets/2-6-01.png)
+![2-6-01](../image/migrating-from-eclipse-to-intellij-idea/2-6-01.png)
 
 ## 显示行号
 
-默认情况下，在编辑器中没有显示行号。要启用它们，转到Settings/Preferences | Editor | General | Appearance | Show line numbers。在那里你还可以找到其他有用的设置。
+默认情况下，在编辑器中没有显示行号。要启用它们，转到Settings/Preferences \| Editor \| General \| Appearance \| Show line numbers。在那里你还可以找到其他有用的设置。
 
 # 一般工作流
 
@@ -84,23 +95,23 @@
 
 有一些令人震惊的消息：IntelliJ IDEA没有“保存（Save）”按钮。由于在IntelliJ IDEA可以撤销重构，并从本地历史（[Local History](https://www.jetbrains.com/help/idea/local-history.html)）恢复更改，所以每次都要求你保存更改是没有意义的。
 
-不过，值得了解的是，对磁盘的物理存储是由某些事件触发的，包括编译、关闭文件、焦点从 IDE 中转出等等。你可以通过 Settings | Appearance & Behavior | System Settings 更改该行为：
+不过，值得了解的是，对磁盘的物理存储是由某些事件触发的，包括编译、关闭文件、焦点从 IDE 中转出等等。你可以通过 Settings \| Appearance & Behavior \| System Settings 更改该行为：
 
-![3-1-01](migrating-from-eclipse-to-intellij-idea.assets/3-1-01.png)
+![3-1-01](../image/migrating-from-eclipse-to-intellij-idea/3-1-01.png)
 
 ## 没有保存动作
 
 作为Eclipse用户，在IntelliJ IDEA中你可能会丧失的一个特性是保存操作，例如，在保存时自动触发的操作，比如格式化代码、组织导入、添加缺失的注释和final修饰符等等。取而代之的是，IntelliJ IDEA提供在提交时自动运行相应的操作：
 
-![3-2-01](migrating-from-eclipse-to-intellij-idea.assets/3-2-01.png)
+![3-2-01](../image/migrating-from-eclipse-to-intellij-idea/3-2-01.png)
 
 或者手动执行：
 
-Code | Reformat Code(Ctrl+Alt+L)
+Code \| Reformat Code(Ctrl+Alt+L)
 
-Code | Optimize Imports(Ctrl+Alt+O)
+Code \| Optimize Imports(Ctrl+Alt+O)
 
-Analyze | Code Cleanup
+Analyze \| Code Cleanup
 
 如果由于某些原因你不能忍受没有 Eclipse 保存动作，你可以安装[插件](https://plugins.jetbrains.com/plugin/7642)模拟 Eclipse 保存动作。
 
@@ -114,31 +125,31 @@ Analyze | Code Cleanup
 
 如果你想要模拟Eclipse的行为，可以调用Make Project (Ctrl+ F9)，它将保存已更改的文件并编译它们。为了方便起见，你甚至可以将快捷键Ctrl+S重新分配给Make Project。
 
-为了启用自动编译，导航到Settings/Preferences | Build, Execution, Deployment | Compiler，然后选择Make project automatically选项：
+为了启用自动编译，导航到Settings/Preferences \| Build, Execution, Deployment \| Compiler，然后选择Make project automatically选项：
 
-![3-3-01](migrating-from-eclipse-to-intellij-idea.assets/3-3-01.png)
+![3-3-01](../image/migrating-from-eclipse-to-intellij-idea/3-3-01.png)
 
 注意，在IntelliJ IDEA中自动编译有别于Eclipse。在Eclipse中不是完全自动的，因为它是由用户直接调用的保存动作触发的，而在IntelliJ IDEA中是在你在编辑器中输入时隐式地调用的。
 
-这就是为什么，即使自动编译（Make project automatically）选项被启用，如果至少有一个应用程序正在运行，IntelliJ IDEA也不会自动编译：它会隐式地重新加载应用程序中的类。在这种情况下，你可以调用Build | Make Project(Ctrl+F9)。
+这就是为什么，即使自动编译（Make project automatically）选项被启用，如果至少有一个应用程序正在运行，IntelliJ IDEA也不会自动编译：它会隐式地重新加载应用程序中的类。在这种情况下，你可以调用Build \| Make Project(Ctrl+F9)。
 
 ### 问题工具窗口（Problems tool window）
 
 如果在编译设置中自动编译选项被启用，那么问题工具窗口就会出现。它显示了在工程编译过程中检测到的问题列表：
 
-![3-3-02](migrating-from-eclipse-to-intellij-idea.assets/3-3-02.png)
+![3-3-02](../image/migrating-from-eclipse-to-intellij-idea/3-3-02.png)
 
 ### Eclipse编译器
 
-虽然Eclipse使用了自己的编译器，但IntelliJ IDEA使用的是与工程JDK绑定的javac编译器。如果你必须使用Eclipse编译器，那么可以导航到Settings/Preferences | Build, Execution, Deployment | Compiler | Java Compiler，并如下选择：
+虽然Eclipse使用了自己的编译器，但IntelliJ IDEA使用的是与工程JDK绑定的javac编译器。如果你必须使用Eclipse编译器，那么可以导航到Settings/Preferences \| Build, Execution, Deployment \| Compiler \| Java Compiler，并如下选择：
 
-![3-3-03](migrating-from-eclipse-to-intellij-idea.assets/3-3-03.png)
+![3-3-03](../image/migrating-from-eclipse-to-intellij-idea/3-3-03.png)
 
 Eclipse和javac编译器之间最大的区别是，Eclipse编译器对错误更宽容，有时能让你运行不编译的代码。
 
 当你在IntelliJ IDEA中需要运行带有编译错误的代码时，在你的运行配置（[run configuration](https://www.jetbrains.com/help/idea/run-debug-configurations-dialog.html)）中将Make选择替换为Make, no error check：
 
-![3-3-04](migrating-from-eclipse-to-intellij-idea.assets/3-3-04.png)
+![3-3-04](../image/migrating-from-eclipse-to-intellij-idea/3-3-04.png)
 
 # 快捷键
 
@@ -200,12 +211,12 @@ IntelliJ IDEA的快捷键与Eclipse完全不同。
 ## Eclipse键映射
 针对不喜欢学习新快捷方式的Eclipse用户，IntelliJ IDEA提供了一个与Eclipse的快捷方式相似的Eclipse键映射：
 
-![4-1-01](migrating-from-eclipse-to-intellij-idea.assets/4-1-01.png)
+![4-1-01](../image/migrating-from-eclipse-to-intellij-idea/4-1-01.png)
 
 ## 查询操作（Find action）
 当你不知道某个操作的快捷方式时，试着使用查询操作特性，可以通过Ctrl+Shift+A使用。按照操作名称输入查询一个操作，查看快捷方式，或者调用：
 
-![4-2-01](migrating-from-eclipse-to-intellij-idea.assets/4-2-01.png)
+![4-2-01](../image/migrating-from-eclipse-to-intellij-idea/4-2-01.png)
 
 # 代码助手
 
@@ -214,19 +225,19 @@ Eclipse和IntelliJ IDEA都提供了代码助手特性，比如代码补全、代
 ## 快速修正
 在IntelliJ IDEA中应用快速修正，按Alt+Enter：
 
-![5-1-01](migrating-from-eclipse-to-intellij-idea.assets/5-1-01.png)
+![5-1-01](../image/migrating-from-eclipse-to-intellij-idea/5-1-01.png)
 
-所有的快速修正都基于Settings | Inspections中的检查配置：
+所有的快速修正都基于Settings \| Inspections中的检查配置：
 
-![5-1-02](migrating-from-eclipse-to-intellij-idea.assets/5-1-02.png)
+![5-1-02](../image/migrating-from-eclipse-to-intellij-idea/5-1-02.png)
 
-如果你想一次性将一个快速修复应用到多个地方（例如，一个完整的文件夹、模块甚至一个项目），你可以通过运行相应的检查Analyze | Run Inspection By Name，或者运行所有的批量检查Analyze | Inspect Code：
+如果你想一次性将一个快速修复应用到多个地方（例如，一个完整的文件夹、模块甚至一个项目），你可以通过运行相应的检查Analyze \| Run Inspection By Name，或者运行所有的批量检查Analyze \| Inspect Code：
 
-![5-1-03](migrating-from-eclipse-to-intellij-idea.assets/5-1-03.png)
+![5-1-03](../image/migrating-from-eclipse-to-intellij-idea/5-1-03.png)
 
 除了直接的问题之外，IntelliJ IDEA也可通过所谓的intention来识别可改进或优化的代码结构（也可以使用Alt+Enter)：
 
-![5-1-04](migrating-from-eclipse-to-intellij-idea.assets/5-1-04.png)
+![5-1-04](../image/migrating-from-eclipse-to-intellij-idea/5-1-04.png)
 
 | **Eclipse** |              | **IntelliJ IDEA**     |              |
 | ----------- | ------------ | --------------------- | ------------ |
@@ -234,13 +245,13 @@ Eclipse和IntelliJ IDEA都提供了代码助手特性，比如代码补全、代
 | Quick fix   | Ctrl+1       | Show intention action | Alt+Enter    |
 
 ## 生成代码
-生成代码的关键操作是Code | Generate，可通过Alt+Insert访问：
+生成代码的关键操作是Code \| Generate，可通过Alt+Insert访问：
 
-![5-2-01](migrating-from-eclipse-to-intellij-idea.assets/5-2-01.png)
+![5-2-01](../image/migrating-from-eclipse-to-intellij-idea/5-2-01.png)
 
 这个操作是对上下文敏感的，不仅在编辑器中，而且在工程工具窗口和导航栏中也可用：
 
-![5-2-02](migrating-from-eclipse-to-intellij-idea.assets/5-2-02.png)
+![5-2-02](../image/migrating-from-eclipse-to-intellij-idea/5-2-02.png)
 
 ## 代码补全
 
@@ -260,17 +271,17 @@ IntelliJ IDEA提供了几种不同的代码补全方式，包括：
 
 [Top 20 Features of Code Completion in IntelliJ IDEA](http://jetbrains.dzone.com/articles/top-20-code-completions-in-intellij-idea)
 
-默认情况下，IntelliJ IDEA不会显示所选项的文档弹出窗口，但可以在Settings/Preferences | Editor | Code Completion | Autopopup documentatoin in (ms)启用：
+默认情况下，IntelliJ IDEA不会显示所选项的文档弹出窗口，但可以在Settings/Preferences \| Editor \| Code Completion \| Autopopup documentatoin in (ms)启用：
 
-![5-3-01](migrating-from-eclipse-to-intellij-idea.assets/5-3-01.png)
+![5-3-01](../image/migrating-from-eclipse-to-intellij-idea/5-3-01.png)
 
 如果你不想启用这个选项，那么当需要的时候通过按Ctrl+Q手动调用这个弹出框：
 
-![5-3-02](migrating-from-eclipse-to-intellij-idea.assets/5-3-02.png)
+![5-3-02](../image/migrating-from-eclipse-to-intellij-idea/5-3-02.png)
 
 当光标位于方法或构造器的括号内时，你可以通过Ctrl+P调用Parameter Info获取有关参数的信息：
 
-![5-3-03](migrating-from-eclipse-to-intellij-idea.assets/5-3-03.png)
+![5-3-03](../image/migrating-from-eclipse-to-intellij-idea/5-3-03.png)
 
 | **Eclipse**     |              | **IntelliJ IDEA**    |                  |
 | --------------- | ------------ | -------------------- | ---------------- |
@@ -293,19 +304,19 @@ IntelliJ IDEA提供了几种不同的代码补全方式，包括：
 | Print to System.err                           | **syserr**       | **serr**           |
 | Define a static field                         | **static_final** | **psf**            |
 
-可用模板的列表可以在Settings/Preferences | Editor | Live Templates中找到。在这里，你还可以添加自己的模板或修改现有的模板。
+可用模板的列表可以在Settings/Preferences \| Editor \| Live Templates中找到。在这里，你还可以添加自己的模板或修改现有的模板。
 
 IntelliJ IDEA推荐代码补全结果的模板，可快速扩展任何模板而不是简单地通过按Tab键来使用代码补全。
 
 ## 后缀模板
 除了“常规”模板之外，IntelliJ IDEA还提供了所谓的后缀模板。当你想要将模板应用到已经输入的表达式时，它们非常有用。例如，键入一个变量名，添加.ifn然后按下Tab键，IntelliJ IDEA将把你的表达式转换为一个if(…==null){...}语句。
 
-要查看可用的后缀模板完整列表，请转到Settings/Preferences | Editor | General | Postfix Completion。
+要查看可用的后缀模板完整列表，请转到Settings/Preferences \| Editor \| General \| Postfix Completion。
 
 ## 环绕动态模板
 环绕动态模板是作用类似动态模板的另一种补充，但是可通过Ctrl+Alt+J应用于被选择的代码。
 
-要定义你自己的环绕模板，请转到Settings/Preferences | Editor | General | Live Templates，并在模板文本中使用\$SELECTION\$：
+要定义你自己的环绕模板，请转到Settings/Preferences \| Editor \| General \| Live Templates，并在模板文本中使用\$SELECTION\$：
 
 ```
 $LOCK$.readLock().lock();
@@ -371,11 +382,11 @@ try {
 
 # 代码格式化
 
-IntelliJ IDEA代码格式化规则（可通过Settings/Preferences | Editor | Code Style访问）类似于Eclipse，有一些细微的差别。你可能需要注意的是，默认情况下Using the Tab char选项是被禁用的，Indent size可能不同等等。
+IntelliJ IDEA代码格式化规则（可通过Settings/Preferences \| Editor \| Code Style访问）类似于Eclipse，有一些细微的差别。你可能需要注意的是，默认情况下Using the Tab char选项是被禁用的，Indent size可能不同等等。
 
-![6-0-01](migrating-from-eclipse-to-intellij-idea.assets/6-0-01.png)
+![6-0-01](../image/migrating-from-eclipse-to-intellij-idea/6-0-01.png)
 
-如果你想要导入Eclipse格式化设置，那么请转到Settings/Preferences | Editor | Code Style | Java，点击Manage，点击Import并且选择导出的Eclipse格式化设置（一个XML文件）。
+如果你想要导入Eclipse格式化设置，那么请转到Settings/Preferences \| Editor \| Code Style \| Java，点击Manage，点击Import并且选择导出的Eclipse格式化设置（一个XML文件）。
 
 请注意，在IntelliJ IDEA和Eclipse的代码风格设置之间可能存在一些差异。例如，你不能告知IntelliJ IDEA在后面放置空格（而不是前面）。如果你想要IntelliJ IDEA使用Eclipse的格式化器，请考虑安装[Eclipse代码格式化插件](https://plugins.jetbrains.com/plugin/6546)。
 
@@ -398,7 +409,7 @@ IntelliJ IDEA代码格式化规则（可通过Settings/Preferences | Editor | Co
 
 如前所述，默认情况下IntelliJ IDEA不会自动编译更改的文件（除非你将其配置为这样做）。这意味着IDE不会自动重新加载更改。要重新加载更改后的类，请通过Ctrl+F9显式地调用Make操作。如果你的应用程序在服务器上运行，除了重新加载，你还可以通过Ctrl+F10使用Update application操作：
 
-![7-0-01](migrating-from-eclipse-to-intellij-idea.assets/7-0-01.png)
+![7-0-01](../image/migrating-from-eclipse-to-intellij-idea/7-0-01.png)
 
 # 调试
 
@@ -417,11 +428,11 @@ Eclipse和IntelliJ IDEA的调试器是类似的，只是使用不同的快捷键
 
 # 导入一个Eclipse工程到IntelliJ IDEA
 
-尽管在术语和UI方面存在差异，但你可以导入一个Eclipse工作区或单个Eclipse工程。要做到这一点，在欢迎界面点击Import Project，或者在主菜单中选择File | New | Project from Existing Sources。
+尽管在术语和UI方面存在差异，但你可以导入一个Eclipse工作区或单个Eclipse工程。要做到这一点，在欢迎界面点击Import Project，或者在主菜单中选择File \| New \| Project from Existing Sources。
 
 如果你的工程使用了一个构建工具，如Maven或Gradle，当导入工程向导中出现提示时，我们建议选择相应的选项，并选择相关的构建文件(pom.xml或build.gradle)：
 
-![9-0-01](migrating-from-eclipse-to-intellij-idea.assets/9-0-01.png)
+![9-0-01](../image/migrating-from-eclipse-to-intellij-idea/9-0-01.png)
 
 如果你想从Eclipse导入现有的运行配置，请考虑使用这个第三方[插件](https://plugins.jetbrains.com/plugin?pluginId=7153)。
 
@@ -436,7 +447,7 @@ Eclipse和IntelliJ IDEA的调试器是类似的，只是使用不同的快捷键
 ## 导出到Eclipse
 
 要将当前打开的工程导出到Eclipse，请遵循以下步骤：
-1. 在主菜单上，选择File | Export to Eclipse。导出到Eclipse（Export to Eclipse）对话框显示了尚未转换到使用Eclipse格式的模块列表(有IntelliJ IDEA模块格式.iml的模块)。
+1. 在主菜单上，选择File \| Export to Eclipse。导出到Eclipse（Export to Eclipse）对话框显示了尚未转换到使用Eclipse格式的模块列表(有IntelliJ IDEA模块格式.iml的模块)。
 1. 选择你想导出的模块。
 1. 如果必要，选择建议的选项。
 1. 点击确定。
@@ -445,7 +456,8 @@ Eclipse和IntelliJ IDEA的调试器是类似的，只是使用不同的快捷键
 
 要将IntelliJ IDEA模块转换成与Eclipse兼容的格式，请遵循以下步骤：
 
-1. 在主菜单上选择File | Project Structure，或者按Ctrl+Shift+Alt+S。
+1. 在主菜单上选择File \| Project Structure，或者按Ctrl+Shift+Alt+S。
 1. 在工程结构对话框（Project Structure Dialog）中，选择你想要转换的模块。
 1. 切换到依赖选项卡（Dependencies Tab）。
 1. 从Dependencies storage format下拉列表选择Eclipse (.classpath)。
+
