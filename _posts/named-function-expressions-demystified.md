@@ -127,7 +127,92 @@ foo();
 
 # 函数语句
 
+ECMAScript 的一种语法扩展是功能语句，目前在基于 Gecko 的浏览器中实现（在 Mac OS X 上的 Firefox 1-3.7a1pre 中测试）。不知何故，无论是好的方面或是坏的方面，这个扩展似乎并不广为人知（[MDC 提到过它们](https://developer.mozilla.org/En/Core_JavaScript_1.5_Reference:Functions#Conditionally_defining_a_function)，但非常简要）。请记住，我们在这里讨论它仅仅是为了学习目的和满足我们的好奇心；除非你正在为特定的基于 Gecko 的环境编写脚本，否则我不建议依赖这个扩展。
 
+这里是一些该非标准结构的部分特性：
+
+1. 函数语句允许出现在任何普通语句允许出现的地方。这当然包括块：
+
+```js
+if (true) {
+  function f(){ }
+}
+else {
+  function f(){ }
+}
+```
+
+2. 函数语句被解读为任何其他语句，包括条件执行：
+
+```js
+if (true) {
+  function foo(){ return 1; }
+}
+else {
+  function foo(){ return 2; }
+}
+foo(); // 1
+// 注意，其他客户端将 foo 视为函数声明，
+// 会用第二个覆盖第一个 foo，因此，结果是“2”而不是“1”。
+```
+
+3. 在变量实例化期间不声明函数语句。它们在运行时声明，就像函数表达式。但是，一旦声明，函数语句的标识符将在函数的整个作用域可用。此标识符可用性使得函数语句不同于函数表达式（你将在下一章节看到命名函数表达式的确切行为）。
+
+```js
+// 至此, foo 还没有声明
+typeof foo; // "undefined"
+if (true) {
+  // 一旦进入块中，foo 将被声明并在整个作用域中可用
+  function foo(){ return 1; }
+}
+else {
+  // 决不会进入这个块，并且 foo 不会重新声明
+  function foo(){ return 2; }
+}
+typeof foo; // "function"
+```
+
+一般而言，我们可以使用标准兼容的代码模拟前面示例中函数语句的行为（不幸的是，更冗长）：
+
+```js
+var foo;
+if (true) {
+  foo = function foo(){ return 1; };
+}
+else {
+  foo = function foo() { return 2; };
+}
+```
+
+4. 函数语句的字符串表示类似于函数声明或命名函数表达式（在本例中包括标识符——“foo”）：
+
+```js
+if (true) {
+  function foo(){ return 1; }
+}
+String(foo); // function foo() { return 1; }
+```
+
+5. 最后，在基于 Gecko 的早期实现（出现于 <= Firefox 3）中，函数语句覆盖函数声明时似乎有一个 Bug。早期版本不知为何在使用函数语句覆盖函数声明时会失败：
+
+```js
+// 函数声明
+function foo(){ return 1; }
+if (true) {
+  // 使用函数语句覆盖
+  function foo(){ return 2; }
+}
+foo(); // 在 FF<= 3 中是 1, 在 FF3.5 及后续版本中是 2
+
+// 但是，当覆盖函数表达式时这种情况不会发现
+var foo = function(){ return 1; };
+if (true) {
+  function foo(){ return 2; }
+}
+foo(); // 所有版本都是 2
+```
+
+注意，早期版本的 Safari（至少 1.2.3、2.0 - 2.0.4 和 3.0.4，以及更早的版本）以同 SpiderMonkey 相同的方式实现函数语句。除了最后有“Bug”那个示例，这一章节所有示例在这些版本的 Safari 中都产生与 Firefox 相同的结果。其他遵循相同语义的浏览器是 Blackberry one（至少在 8230、9000 和 9530 机型中）。这种行为的多样性再次证明了依赖这些扩展是多么糟糕的想法。
 
 # 命名函数表达式
 
