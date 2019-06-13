@@ -23,6 +23,11 @@ description: >- # this means to ignore newlines until "baseurl:"
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://github.com/ericzong/Translations" # the base hostname & protocol for your site, e.g. http://example.com
 
+# ----- content config -----
+collections:
+  references:
+    output: true
+
 # ----- system config -----
 # port: 
 # host: 
@@ -42,9 +47,9 @@ github_username:  ericzong
 # ----- page config -----
 markdown: kramdown
 highlighter: rouge
-# kramdown: 
-  # input: GFM
-  # syntax_highlighter: rouge
+kramdown: 
+  input: GFM
+  syntax_highlighter: rouge
 
 # paginate
 paginate: 5
