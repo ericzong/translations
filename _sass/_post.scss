@@ -37,6 +37,12 @@
             }
         }
     }
+	mark {
+		background-color: #EBFFEB;
+	}
+	dt {
+		font-weight: bold;
+	}
 }
 @media screen and (max-width: 770px) {
     .page[post] {
