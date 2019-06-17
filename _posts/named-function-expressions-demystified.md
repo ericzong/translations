@@ -216,9 +216,72 @@ foo(); // 所有版本都是 2
 
 # 命名函数表达式
 
+函数表达式实际上很常见。在 Web 开发中，“fork”是一种常见的模式，它基于某种特性测试的函数定义，以便获得最佳性能。因为这些 forking 通常发生在相同作用域中，所以几乎总是需要使用函数表达式。毕竟，正如我们现在所知的，不应有条件地执行函数声明：
 
+```js
+// contains 是 Garrett Smith 编写的 “APE Javascript 库”的一部分（http://dhtmlkitchen.com/ape/）
+var contains = (function() {
+  var docEl = document.documentElement;
 
-# 调试中的函数名
+  if (typeof docEl.compareDocumentPosition != 'undefined') {
+    return function(el, b) {
+      return (el.compareDocumentPosition(b) & 16) !== 0;
+    };
+  }
+  else if (typeof docEl.contains != 'undefined') {
+    return function(el, b) {
+      return el !== b && el.contains(b);
+    };
+  }
+  return function(el, b) {
+    if (el === b) return false;
+    while (el != b && (b = b.parentNode) != null);
+    return el === b;
+  };
+})();
+```
+
+很明显，当一个函数表达式具有名字（技术上讲——标识符），则称为“命名函数表达式”。在你看到的第一个示例中——`var bar = function foo(){};`——正是如此——它是一个函数名为 `foo` 的命名函数表达式。一个需要记住的重要细节是，该名字仅在新定义函数的作用域内有效；规范要求标识符对于一个封闭作用域（enclosing scope）不应有效：
+
+```js
+var f = function foo(){
+  return typeof foo; // “foo” 在内部作用域有效
+};
+// foo 在“外部”不可见
+typeof foo; // "undefined"
+f(); // "function"
+```
+
+那么，这些命名函数表达式有什么特别呢？为什么我们要给它们取名呢？
+
+似乎命名函数有利于获得一个更令人愉快的调试体验。调试应用程序时，有一个具有描述性项目的调用栈将会有很大不同。
+
+# 调试器中的函数名
+
+当函数具有相应的标识符时，调试器在检查（inspect）调用堆栈时将会把该标识符作为函数名显示。一些调试器（比如 Firebug）对显示匿名函数名称有所帮助，它将匿名函数赋值给的变量名作为标识。不幸的是，这些调试器通常依赖于简单的解析规则；这种提取通常非常脆弱，并且经常产生错误结果。
+
+让我们看一个简单的例子：
+
+```js
+function foo(){
+  return bar();
+}
+function bar(){
+  return baz();
+}
+function baz(){
+  debugger;
+}
+foo();
+
+// Here, we used function declarations when defining all of 3 functions
+// When debugger stops at the `debugger` statement,
+// the call stack (in Firebug) looks quite descriptive:
+baz
+bar
+foo
+expr_test.html()
+```
 
 
 
