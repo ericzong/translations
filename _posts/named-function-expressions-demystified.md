@@ -274,20 +274,207 @@ function baz(){
 }
 foo();
 
-// Here, we used function declarations when defining all of 3 functions
-// When debugger stops at the `debugger` statement,
-// the call stack (in Firebug) looks quite descriptive:
+// 在这里，当定义 3 个函数时我们均使用了函数声明
+// 当调试器在 debugger 语句停止时，
+// 调用栈（在 Firebug 中）看起来很有描述性：
 baz
 bar
 foo
 expr_test.html()
 ```
 
+我们可以看到，`foo` 调用 `bar` 继而调用 `baz`（而 `foo` 自己是被 `expr_test.html` 文档全局作用域调用的）。真正美妙的是，即使使用的是匿名表达式，Firebug 也会设法解析函数的“名字”：
 
+```js
+function foo(){
+  return bar();
+}
+var bar = function(){
+  return baz();
+}
+function baz(){
+  debugger;
+}
+foo();
+
+// 调用栈
+baz
+bar()
+foo
+expr_test.html()
+```
+
+但是，不那么美好的是，如果一个函数表达式变得更为复杂（现实中通常总是如此），所有调试器的努力都将毫无作用；我们最终会得到一个闪亮的问号来代替函数名：
+
+```js
+function foo(){
+  return bar();
+}
+var bar = (function(){
+  if (window.addEventListener) {
+    return function(){
+      return baz();
+    };
+  }
+  else if (window.attachEvent) {
+    return function() {
+      return baz();
+    };
+  }
+})();
+function baz(){
+  debugger;
+}
+foo();
+
+// 调用栈
+baz
+(?)()
+foo
+expr_test.html()
+```
+
+当一个函数被赋值给一个以上的变量时，另一个混乱的情况将会出现：
+
+```js
+function foo(){
+  return baz();
+}
+var bar = function(){
+  debugger;
+};
+var baz = bar;
+bar = function() {
+  alert('spoofed');
+};
+foo();
+
+// 调用栈
+bar()
+foo
+expr_test.html()
+```
+
+你可以看到调用栈显示 `foo` 调用了 `bar`。很明显，这不是实际发现的情况。这个混乱源于 `baz` 与另一个函数——弹出“spoofed（欺骗）”警告的那个——“交换”了引用。如你所见，这种解析，在简单情况下工作得很棒，但在复杂（non-trivial）脚本中常常是无用的。
+
+所有的一切都归结为，命名函数表达式是得到一个真正健壮的堆栈检查（stack inspection）的唯一方法。让我们考虑用命名函数来重写前面的示例。注意那两个命名为 `bar` 的函数是如何从自动执行包装器（self-executing wrapper）中返回的：
+
+```js
+function foo(){
+  return bar();
+}
+var bar = (function(){
+  if (window.addEventListener) {
+    return function bar(){
+      return baz();
+    };
+  }
+  else if (window.attachEvent) {
+    return function bar() {
+      return baz();
+    };
+  }
+})();
+function baz(){
+  debugger;
+}
+foo();
+
+// 再一次，我们有了一个描述性的调用栈！
+baz
+bar
+foo
+expr_test.html()
+```
+
+在我们开始愉快地跳舞庆祝这个圣杯发现之前，我想将我钟爱的 JScript 带入这个画面。
 
 # JScript 的 Bug
 
+不幸的是，JScript（即 Internet Explorer 的 ECMAScript 实现）严重搞乱了命名函数表达式。目前，很多人不推荐使用命名函数表达式，JScript 应为此负责。仍然令人痛心的是，即使是用于 Internet Explorer 8 的最新版本的 JScript——5.8——仍然表现出以下所述的每个独立的怪异行为。
 
+让我们看看这个不恰当的实现到底有什么错误。理解其所有问题将使我们能安全地使用它们。请注意，为了清晰起见，我把这些差异分成了几个示例，即使所有的差异很可能是一个主要 bug 的结果。
+
+## 示例 1：函数表达式标识符泄漏到封闭作用域
+
+```js
+var f = function g(){};
+typeof g; // "function"
+```
+
+还记录我提过在封闭作用域内命名函数表达式的标识符是无效的吗？好吧，JScript 不遵循这个规范——在上面的示例中 `g`  解析成了一个函数对象。这是一个被观察到的最为广泛的差异。用一个额外的标识符不经意地污染封闭作用域是很危险的——而该作用域又很可能是全局的。当然，这种污染将是一个难以追踪的 bug 的根源。
+
+## 示例 2：命名函数表达式被同时视为函数声明和函数表达式
+
+```js
+typeof g; // "function"
+var f = function g(){};
+```
+
+正如我之前解释的一样，在一个特定执行上下文中，函数声明将在任意表达式之前解析。上面的示例演示了 JScript 实际上是如何将命名函数表达式视为函数声明的。你可以看到，在“实际声明”前 `g` 的解析就发生了。
+
+这将带我们进入下一个示例：
+
+## 示例 3：命名函数表达式创建了两个不同的函数对象！
+
+```js
+var f = function g(){};
+f === g; // false
+
+f.expando = 'foo';
+g.expando; // undefined
+```
+
+这就是事情变得有趣的地方。更准确地说——简直很疯狂。这里我们看到了不得不处理两个不同对象的危险性——扩充了其中一个明显没有修改另一个；如果你决定这样使用，可能会相当麻烦，如示例所示，缓存机制将某些内容存储在 `f` 的属性中，然后试图通过 `g` 的属性访问，仅仅因为主观上以为是在使用同一个对象。
+
+让我们看稍微复杂点的情况。
+
+## 示例 4：函数声明顺序解析且不受条件块影响
+
+```js
+var f = function g() {
+  return 1;
+};
+if (false) {
+  f = function g(){
+    return 2;
+  };
+}
+g(); // 2
+```
+
+像这样的示例可能导致更难跟踪的 bug。这里到底发生了什么实际上是相当简单的。首先，`g` 被解析为一个函数声明，又由于在 JScript 中声明是独立于条件块的，因此 `g` 是“死亡” `if` 分支中声明的一个函数——`function g(){ return 2 }`。然后，所有的“常规”表达式被计算，而 `f` 将被另一个新创建的函数对象赋值。在计算表达式时，“死亡” `if` 分支永远不会进入，因此，`f` 保持引用第一个函数——`function g(){ return 1 }`。目前为止应该很清楚了，如果你不够小心，从 `f` 内部调用了 `g`，那么你将最终调用一个完全不相关的 `g` 函数对象。
+
+你或许想知道，将所有这些令人混乱的不同函数对象与 `arguments.callee` 比较会如何。`callee` 是引用 `f` 还是 `g` 呢？让我们来看一看：
+
+```js
+var f = function g(){
+  return [
+    arguments.callee == f,
+    arguments.callee == g
+  ];
+};
+f(); // [true, false]
+g(); // [false, true]
+```
+
+正如你所见，`arguments.callee` 引用正在被调用的函数。这实际上是好消息，稍后你会看到。
+
+当在声明赋值中使用命名函数表达式时，可能见到另一个有关“意外行为”的有趣示例，但是仅当函数名与其赋值给的变量标识符相同时才会发生：
+
+```js
+(function(){
+  f = function f(){};
+})();
+```
+
+你也许知道，非声明赋值（不推荐，这里使用仅仅是为了演示）应该导致创建全局的 `f` 属性。在符合规范的实现中这是明确发生的。但是，JScript 的 bug 使得事情更令人困惑一点。由于命名函数表达式会被解析为函数声明（见 示例 2），这里会发生的是，在变量声明阶段 `f` 变成声明了一个局部变量。随后，当函数执行开始，赋值不再是未声明的，因此右边的 `function f(){}` 被简单地赋值给了新创建的局部变量 `f`。全局 `f` 不会创建了。
+
+这表明如何理解 JScript 的特性可能会导致代码中完全不同的行为。
+
+看看 JScript 的缺陷，我们需要避免什么就十分清楚了。首先，我们需要意识到泄漏的标识符（以至于不会污染封闭作用域）。其次，我们决不应该引用用作函数名的标识符；前面示例中的 `g` 就是一个麻烦的标识符。请注意，如果我们忘记 `g` 的存在，将可以避免很多歧义。这里，总是通过 `f` 或 `arguments.callee` 引用函数是一个关键。如果你使用命名表达式，应将该名称视为仅用于调试目的。最后，一个加分点是，始终清理在 NFE 声明期间错误创建的无关函数。
+
+我认为最后这点需要一点说明：
 
 # JScript 内存管理
 
