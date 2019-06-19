@@ -1,9 +1,9 @@
 ---
 layout: post
-title: 
-category: 
-tags: 
-excerpt:
+title: 命名函数表达式揭秘
+category: 编程语言
+tags: JS
+excerpt: "介绍函数表达式与函数声明的区别，以及讨论其在各种环境中的非规范行为和可能引发的问题。"
 author: "Eric Zong"
 date: 2019-06-11 
 ---
@@ -12,6 +12,12 @@ date: 2019-06-11
 {:toc}
 
 > 英文原文：[Named function expressions demystified](http://kangax.github.io/nfe/)
+>
+> 创建于：2009-06-17
+>
+> 最后更新于：2014-08-04
+>
+> 译者前言：本文开头就比较系统地讨论了 JS 中命名函数表达式和函数声明的区别，这部分很有参考和研究意义，建议仔细阅读。不过，随后作者用了大量的篇幅讨论 JScript 脚本语言以及多种浏览器（引擎）实现上的差异和缺陷等等。鉴于 JScript 目前应该很少使用，不感兴趣的小伙伴可以跳过相应章节。而讨论的多种浏览器实现的差异和缺陷都是基于相当陈旧的古董版本了，所以学习意义也不大。呃……是不是觉得后续的讨论方向很奇怪？如果注意到本文的写作时间，也许就很好理解了。
 
 # 介绍
 
@@ -19,7 +25,7 @@ date: 2019-06-11
 
 简而言之，命名函数表达式仅对一件事有用——调试器（debugger）和分析器（profiler）中的描述性函数名。好吧，也有可能使用函数名进行递归，但你很快就会发现这通常是不明智的。如果你不关心调试体验，则无需担心。否则，请继续阅读以查看你将要处理的一些跨浏览器故障以及如何解决这些故障的提示。
 
-我将首先解释一下函数表达式是什么，以及现代调试器如何处理它们。要跳转到[最终解决方案](#解决方案)请随意，它解释了如何安全地使用这些结构。
+我将首先解释一下函数表达式是什么，以及现代调试器如何处理它们。要跳转到[最终解决方案](#jscript-解决方案)请随意，它解释了如何安全地使用这些结构。
 
 # 函数表达式与函数声明
 
@@ -478,34 +484,468 @@ g(); // [false, true]
 
 # JScript 内存管理
 
+熟悉 JScript 差异，我们现在可以看到使用这些有缺陷的构造时内存消耗的潜在问题。让我们来看一个简单示例：
 
+```js
+var f = (function(){
+  if (true) {
+    return function g(){};
+  }
+  return function g(){};
+})();
+```
+
+我们知道从这个匿名调用中返回的函数——具有 `g` 标识符的那个——被赋值给了外部的 `f`。我们也知道命名函数表达式产生多余的函数，并且该对象与返回的函数不同。这里的内存问题是由这个无关的 `g` 函数在返回函数的闭包中字面上的“陷阱”引起的。发生这种情况是因为内部函数声明在与那个讨厌的 `g` 函数相同的作用域。除非我们明确地断开对 `g` 函数的引用，否则它会继续消耗内存。
+
+```js
+var f = (function(){
+  var f, g;
+  if (true) {
+    f = function g(){};
+  }
+  else {
+    f = function g(){};
+  }
+  // 使 g 无效，以便它不再引用那个无关的函数
+  g = null;
+  return f;
+})();
+```
+
+注意，我们也明确声明了 `g`，因此 `g = null` 赋值不会在符合规范的客户端（例如，非 JScript 的客户端）中创建一个全局的 `g` 变量。通过使 `g` 引用无效，我们允许垃圾收集器清除 `g` 引用的隐式创建的函数对象。
+
+当处理 JScript 命名函数表达式的内存泄漏时，我决定运行一系列简单的测试来确定使 `g` 无效确实释放了内存。
 
 # 测试
 
+这个测试很简单。它将通过命名函数表达式创建 10000 个函数并存储在一个数组中。我会稍等一会儿，再检查内存消耗到底有多高。然后，我将使引用无效并再次重复该过程。下面是我使用的一个测试用例：
 
+```js
+function createFn(){
+  return (function(){
+    var f;
+    if (true) {
+      f = function F(){
+        return 'standard';
+      };
+    }
+    else if (false) {
+      f = function F(){
+        return 'alternative';
+      };
+    }
+    else {
+      f = function F(){
+        return 'fallback';
+      };
+    }
+    // var F = null;
+    return f;
+  })();
+}
+
+var arr = [ ];
+for (var i=0; i<10000; i++) {
+  arr[i] = createFn();
+}
+```
+
+在 Windows XP SP2 上的 Process Explorer 中看到的结果是：
+
+```
+  IE6:
+
+    without `null`:   7.6K -> 20.3K
+    with `null`:      7.6K -> 18K
+
+  IE7:
+
+    without `null`:   14K -> 29.7K
+    with `null`:      14K -> 27K
+```
+
+结果在某种程度上证实了我的假设——明确地将多余引用无效化的确释放了内存，但是消耗方面的差异相对微不足道。对于 10000 个函数对象而言，会有大约 3MB 的差异。当设计大型应用、长时间运行的应用或者内存有限的设备（如移动设备）时，应该牢记这一点。对于小脚本而言，这样的差异几乎是无关紧要的。
+
+你可能以为这就结束了，但我们还没有彻底结束 :) 这里我想提一些小细节，这些细节是跟 Safari 2.x 有关的。
 
 # Safari 的 Bug
 
+在较老版本的 Safari（即 Safari 2.x 系列）中，甚至存在不太广为人知的命名函数表达式 bug。我在网上看到一些[声明](http://meyerweb.com/eric/thoughts/2005/07/11/safari-syntaxerror/)称 Safari 2.x 根本不支持命名函数表达式。不是这样的。Safari 确实支持，但实现中存在 bug，你马上将看到这些 bug。
 
+在某个上下文中遇到函数表达式时，Safari 2.x 无法完全解析该程序。它不会抛出任何错误（比如，`SyntaxError`）。而只是简单退出（bail out）：
+
+```js
+(function f(){})(); // <== NFE
+alert(1); // 该行不会执行到，因为前一表达式使整个程序失败了
+```
+
+在摆弄了各种测试用例后，我得出结论，如果命名函数表达式不是赋值表达式的一部分，Safari 2.x 将无法解析。赋值表达式的一些示例：
+
+```js
+// 变量声明部分
+var f = 1;
+
+// 简单赋值部分
+f = 2, g = 3;
+
+// return 语句部分
+(function(){
+  return (f = 2);
+})();
+```
+
+这意味着将命名函数表达式放入赋值中会使 Safari “满意”：
+
+```js
+(function f(){}); // 失败
+
+var f = function f(){}; // 有效
+
+(function(){
+  return function f(){}; // 失败
+})();
+
+(function(){
+  return (f = function f(){}); // 有效
+})();
+
+setTimeout(function f(){ }, 100); // 失败
+
+Person.prototype = {
+  say: function say() { ... } // 失败
+}
+
+Person.prototype.say = function say(){ ... }; // 有效
+```
+
+这也意味着我们不能使用这样的常见模式来返回没有赋值的命名函数表达式：
+
+```js
+// 替换这种非 Safari 2.x 兼容的语法
+(function(){
+  if (featureTest) {
+    return function f(){};
+  }
+  return function f(){};
+})();
+
+// 我们应该使用这个稍微冗长的替代方案：
+(function(){
+  var f;
+  if (featureTest) {
+    f = function f(){};
+  }
+  else {
+    f = function f(){};
+  }
+  return f;
+})();
+
+// 或者另一种变体：
+(function(){
+  var f;
+  if (featureTest) {
+    return (f = function f(){});
+  }
+  return (f = function f(){});
+})();
+
+/*
+  不幸的是，这样做，我们引入了对函数的额外引用，它被限制在一个返回函数的闭包中。
+  为了防止额外的内存使用，我们可以将所有命名函数表达式赋值给一个单一的变量。
+*/
+
+var __temp;
+
+(function(){
+  if (featureTest) {
+    return (__temp = function f(){});
+  }
+  return (__temp = function f(){});
+})();
+
+...
+
+(function(){
+  if (featureTest2) {
+    return (__temp = function g(){});
+  }
+  return (__temp = function g(){});
+})();
+
+/*
+  注意，后续赋值会销毁之前的引用，防止任何过多的内存使用。
+*/
+```
+
+如果 Safari 2.x 兼容性很重要，我们需要确保“不兼容”的结构甚至不会出现在源代码中。这当然是非常令人不悦的，但是绝对有可能实现，特别是在了解了问题的根源时。
+
+还值得一提的是，在 Safari 2.x 中将一个函数声明为命名函数表达式会出现另一个小问题，该函数描述不会包含函数标识符：
+
+```js
+var f = function g(){};
+
+// 注意函数描述是如何缺少 g 标识符的
+String(f); // function () { }
+```
+
+这不是什么大不了的事。正如我之前已经提到的，无论如何都不应该依赖函数反编译（decompilation）。
 
 # SpiderMonkey 的特点
 
+我们知道命名函数表达式的标识符仅在函数局部作用域可用。但这种“神奇”的作用域实际上是如何发生的呢？它看起来很简单。计算命名函数表达式时，会创建一个特殊对象。该对象的唯一目的是保存一个名称对应于函数标识符的属性，以及与函数本身对应的值。然后将该对象注入当前作用域链的前端，然后使用此“扩充”作用域链初始化函数。
 
+然而，这里有趣的部分是 ECMA-262 定义这个“特殊”对象（一个包含函数标识符的对象）的方式。规范表明，从字面上说，一个“像通过 new Object() 表达式一样”创建的对象使得这个对象是内置 `Object` 构造器的实例。但是，只有一个实现——SpiderMonkey——按字面意思遵循了此规范要求。在 SpiderMonkey 中，通过扩充 `Object.prototype` 可以干扰函数局部变量：
 
-# 解决方案
+```js
+Object.prototype.x = 'outer';
 
+(function(){
 
+  var x = 'inner';
 
-# 可选解决方案
+  /*
+     foo 函数在其作用域链中有一个特殊对象用于保存标识符。那个对象实际上是 { foo: <function object> }。
+     当通过作用域链解析 x 时，首先在 foo 局部上下文中搜索。未找到时，将在作用域链的下一个对象中搜索。
+     该对象即是保存标识符那个——{ foo: <function object> }，而由于它继承自 Object.prototype，x 正好在这里，
+     即 Object.prototype.x（值为 'outer'）。外部函数的作用域（x === 'inner' 那个）甚至从未达到。
+  */
 
+  (function foo(){
 
+    alert(x); // 警告 'outer'
+
+  })();
+})();
+```
+
+注意，后续版本的 SpiderMonkey 实际上改变了这种行为，因为它可能被认为是一个安全漏洞。“特殊”对象不再继承自 `Object.prototype`。但是，你仍然可以在 Firefox <=3 中见到它。
+
+实现内部对象作为全局 `Object` 实例的另一个环境是 Blackberry 浏览器。只是这一次，它是继承自 `Object.prototype` 的活动对象（Activation Object）。请注意，规范实际上没有写创建的活动对象要“像通过 new Object() 表达式一样”（与命名函数表达式的标识符持有者对象的情况一样）。它规定活动对象仅仅是一种规范机制。
+
+那么，让我们看看 Blackberry 浏览器中会发生什么：
+
+```js
+Object.prototype.x = 'outer';
+
+(function(){
+
+  var x = 'inner';
+
+  (function(){
+
+    /*
+    当依据作用域链解析 x 时，将首先搜索局部函数的活动对象。当然，那里没有 x。
+    但是，由于活动对象继承自 Object.prototype，接下来将搜索 Object.prototype。
+    实际上 Object.prototype.x 确实存在，因此 x 将解析为它的值——'outer'。
+    与前面的示例一样，具有它自己的 x === 'inner' 的外部函数作用域（活动对象）甚至从未达到。
+    */
+
+    alert(x); // 警告 'outer'
+
+  })();
+})();
+```
+
+这可能看起来很奇怪，但真正令人不安的是，这与现有的 `Object.prototype` 成员发生冲突的可能性更大：
+
+```js
+(function(){
+
+  var constructor = function(){ return 1; };
+
+  (function(){
+
+    constructor(); // 计算得到对象 {}，而不是 1
+
+    constructor === Object.prototype.constructor; // true
+    toString === Object.prototype.toString; // true
+
+    // etc.
+
+  })();
+})();
+```
+
+这个 Blackberry 差异的解决方案很明显：避免将命名变量作为 `Object.prototype` 的属性——`toString`、`valueOf`、`hasOwnProperty` 等等。
+
+# JScript 解决方案
+
+```js
+var fn = (function(){
+
+  // 声明一个变量来接受函数对象的赋值
+  var f;
+
+  // 条件化地创建一个命名函数并将其引用赋值给 f
+  if (true) {
+    f = function F(){ };
+  }
+  else if (false) {
+    f = function F(){ };
+  }
+  else {
+    f = function F(){ };
+  }
+
+  // 将 null 赋值给与函数名对应的变量。
+  // 这标记该函数对象（标识符引用的）可被垃圾收集
+  var F = null;
+
+  // 返回一个条件化定义的函数
+  return f;
+})();
+```
+
+最后，在编写类似跨浏览器的 `addEvent` 函数时，我们将如何在现实中应用这种“技术”：
+
+```js
+// 1) 用独立的作用域包围声明
+var addEvent = (function(){
+
+  var docEl = document.documentElement;
+
+  // 2) 声明一个接受函数赋值的变量
+  var fn;
+
+  if (docEl.addEventListener) {
+
+    // 3) 确保给函数取一个描述性的标识符
+    fn = function addEvent(element, eventName, callback) {
+      element.addEventListener(eventName, callback, false);
+    };
+  }
+  else if (docEl.attachEvent) {
+    fn = function addEvent(element, eventName, callback) {
+      element.attachEvent('on' + eventName, callback);
+    };
+  }
+  else {
+    fn = function addEvent(element, eventName, callback) {
+      element['on' + eventName] = callback;
+    };
+  }
+
+  // 4) 清理 JScript 创建的 addEvent 函数
+  //   确保赋值前置有 var、在函数顶部声明 addEvent
+  var addEvent = null;
+
+  // 5) 最后返回 fn 引用的函数
+  return fn;
+})();
+```
+
+# 替代解决方案
+
+值得一提的是，实际上存在在调用栈中具有描述性名称的替代方法。不需要使用命名函数表达式的方法。首先，通常可以通过声明而不是表达式来定义函数。只有在不需要创建多个函数时，此选项才可用：
+
+```js
+var hasClassName = (function(){
+
+  // 定义一些私有变量
+  var cache = { };
+
+  // 使用函数声明
+  function hasClassName(element, className) {
+    var _className = '(?:^|\\s+)' + className + '(?:\\s+|$)';
+    var re = cache[_className] || (cache[_className] = new RegExp(_className));
+    return re.test(element.className);
+  }
+
+  // 返回函数
+  return hasClassName;
+})();
+```
+
+在分支函数定义时，显然不起作用。然而，这里有一个有趣的模式，我首次看到是 [Tobie Langel](http://tobielangel.com/) 在使用。这个可行的方法是预先使用函数声明定义所有函数，但是赋予它们稍微不同的标识符：
+
+```js
+var addEvent = (function(){
+
+  var docEl = document.documentElement;
+
+  function addEventListener(){
+    /* ... */
+  }
+  function attachEvent(){
+    /* ... */
+  }
+  function addEventAsProperty(){
+    /* ... */
+  }
+
+  if (typeof docEl.addEventListener != 'undefined') {
+    return addEventListener;
+  }
+  else if (typeof docEl.attachEvent != 'undefined') {
+    return attachEvent;
+  }
+  return addEventAsProperty;
+})();
+```
+
+虽然这是一种优雅的方法，但它有其自身的缺点。首先，使用不同的标识符，你将失去命名一致性。它的好坏都不是很清楚。有些人可能更愿意拥有相同的名字，而有些人则不会介意不同的名字；毕竟，不同的名字通常“描述”了使用的实现。比如，在调试器中看到“attachEvent”，会让你知道这是一个基于 `attachEvent` 实现的 `addEvent`。另一方面，与实现相关的名称可能根本没有意义。如果你以这种方式提供 API 并命名“内部”函数，那么 API 的用户很容易迷失在所有的实现细节中。
+
+该问题的解决方案可能是采用不同的命名约定。小心不要引入额外的复杂性（verbosity）。想到的一些替代方案是：
+
+```
+`addEvent`, `altAddEvent` and `fallbackAddEvent`
+  // or
+  `addEvent`, `addEvent2`, `addEvent3`
+  // or
+  `addEvent_addEventListener`, `addEvent_attachEvent`, `addEvent_asProperty`
+```
+
+这种模式的另一个小问题是增加了内存消耗。通过预先定义所有函数变体，你隐式创建了 n-1 个未使用的函数。如你所见，如果在 `document.documentElement` 中找到了 `attachEvent`，那么 `addEventListener` 和 `addEventAsProperty` 都不会真正使用。然而，它们已经消耗了内存；由于与 JScript 古怪的命名表达式相同的原因,内存永远不会释放——两个函数都会被“捕获（trap）”到返回的函数闭包中。
+
+增加的消耗无乎不算是什么问题。如果像 Prototype.js 这样的库要使用这个模式，那么额外创建的函数对象不会超过 100-200 个。只要函数不是以这种方式重复创建（运行时），而只有一次（在加载时），你可能不应该担心。
 
 # WebKit 的显示名
 
+WebKit 团队采取了一种稍微不同的方法。不好的函数描述令人沮丧——不论匿名的还是命名的——WebKit 引入了“特殊” 的 `displayName` 属性（本质上是一个字符串），当一个函数为其赋值时，它会在调试器/分析器中显示以代替该函数的“名称”。Francisco Tolmasky [详细解释](http://www.alertdebugging.com/2009/04/29/building-a-better-javascript-profiler-with-webkit/)了该解决方案的基本原理和实现。
 
+# 对未来的讨论
 
-# 未来的考虑
+即将推出的 ECMAScript 版本——ECMA-262，第 5 版——引入了所谓的严格模式。严格模式的目的是为了禁止语言中某些被认为是脆弱、不可靠或危险的部分。这部分其中之一是 `arguments.callee`，“被禁止”很可能是出于安全考虑。在严格模式下，访问 `arguments.callee` 会导致 `TypeError`（参见 10.6 节）。我提及严格模式的原因是因为无法在第 5 版中使用 `arguments.callee` 进行递归，这很可能会导致命名函数表达式的使用增加。理解它们的语义和 bug 会变得更加重要。
 
+```js
+// 以前，你可以使用 arguments.callee
+(function(x) {
+  if (x <= 1) return 1;
+  return x * arguments.callee(x - 1);
+})(10);
 
+// 在严格模式下，一个替代方案是使用命名函数表达式
+(function factorial(x) {
+  if (x <= 1) return 1;
+  return x * factorial(x - 1);
+})(10);
+
+// 或者只是回到稍微不那么灵活的函数声明
+function factorial(x) {
+  if (x <= 1) return 1;
+  return x * factorial(x - 1);
+}
+factorial(10);
+```
 
 # 鸣谢
+
+Richard Cornford，是第一批[解释关于命名函数表达式的 JScript bug](http://groups.google.com/group/comp.lang.javascript/msg/5b508b03b004bce8) 的人之一。 Richard 解释了本文中提到的大多数 bug。我强烈建议阅读他的解释。我还要感谢 Yann-Erwan Perio 和 Douglas Crockford 早在 2003 年就[提到并讨论了 comp.lang.javascript 中的命名函数表达式问题](http://groups.google.com/group/comp.lang.javascript/msg/03d53d114d176323)。
+
+John-David Dalton，提供有关“最终解决方案”的有用建议。  
+
+Tobie Langel，在“替代解决方案”中提出的想法。
+
+Garrett Smith 和 Dmitry A. Soshnikov 进行了各种补充和更正。
+
+有关俄语 ECMAScript 函数详细说明，请参考 [Dmitry A. Soshnikov 的这篇文章](http://dmitrysoshnikov.com/ecmascript/ru-chapter-5-functions/)。
+
+> 译者后记
+>
+> 最终翻译完了！！！本文应该是目前为止翻译最长的一篇，前后用掉了好几天的业余时间。
+>
+> 由于文风比较学术范儿，又在辨析概念间的区别，很多词句结构也比较复杂，翻译的学术性和准确性要求都较高，翻译难度真心不小。
+>
+> 本着翻译力求准确的宗旨，绝大部分内容都采用直译；部分不符合中文语言习惯的句子略有调整，或使用意译的方式；极少部分句子由于多种原因，含义不易理解，翻译相当困难，一般根据上下文推测其含义，因此，翻译或与作者本意有出入，欢迎指正。
+
