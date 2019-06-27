@@ -126,9 +126,263 @@ assert.strictEqual('mhatter', username, `Expected username to be ${username}`);
 
 # 依赖注入的缺点
 
+以这种方式创建大型的复杂应用程序是可能的。我知道因为我已经[做到了](https://www.squiz.net/technology/squiz-workplace)。测试变得容易，并且使得每个函数的依赖明确。但是，确实也有某些缺点。主要的缺点是，你最终会得到如下冗长的函数签名：
 
+```js
+function app(doc, con, ftch, store, config, ga, d, random) {
+    // Application code goes here
+ }
+
+app(document, console, fetch, store, config, ga, (new Date()), Math.random);
+```
+
+这还不算太糟，除了你还有参数钻取的问题。在一个非常低级的函数中，你可能需要一些这样的参数。因此，你必须通过函数调用的许多层向下传递参数。这很烦人。例如，你可能需要通过 5 层中间函数传递日期。这些中间函数都不使用日期对象。这不是世界末日。能够看到这些显式的依赖关系是很好的。但还是很烦人。还有另一种方法…
 
 # 懒惰函数
+
+让我们看看函数式程序员利用的第二个漏洞。事情是这样开始的：副作用直到它真正发生才算副作用。听起来晦涩难懂，我知道。让我们试着说得更清楚一点。考虑以下代码：
+
+```js
+// fZero :: () -> Number
+function fZero() {
+    console.log('Launching nuclear missiles');
+    // Code to launch nuclear missiles goes here
+    return 0;
+}
+```
+
+我知道这是个愚蠢的例子。如果我们在代码中想要一个零，我们可以直接写出来。我知道你，温柔的读者，绝不会用 JavaScript 编写控制核武器的代码。但这有助于说明这一点。这很显然是不纯粹的代码。它将日志输出到控制台，并且也许会引发核战争。想象一下我们想要零。想象一个场景，在导弹发射后我们想计算一些东西。我们可能需要启动倒计时器之类的东西。在这种情况下，提前计划好如何进行计算是完全合理的。我们要非常小心那些导弹何时起飞。我们不想把我们的计算混为一谈，以免他们意外发射导弹。那么，如果我们将 `fZero()` 包装在另一个仅返回它的函数中会怎么样呢？有点像安全包装。
+
+```js
+// fZero :: () -> Number
+function fZero() {
+    console.log('Launching nuclear missiles');
+    // Code to launch nuclear missiles goes here
+    return 0;
+}
+
+// returnZeroFunc :: () -> (() -> Number)
+function returnZeroFunc() {
+    return fZero;
+}
+```
+
+我可以运行 `returnZeroFunc()` 任意多次，只要我不调用返回值，我（理论上）是安全的。我的代码不会发射任何核导弹。
+
+```js
+const zeroFunc1 = returnZeroFunc();
+const zeroFunc2 = returnZeroFunc();
+const zeroFunc3 = returnZeroFunc();
+// No nuclear missiles launched.
+```
+
+现在，让我们更正式地定义纯函数。然后我们可以更详细地检查 `returnZeroFunc()` 函数。函数是纯函数，如果：
+
+1. 它没有明显的副作用；
+2. 它是引用透明的。也就是说，给定相同的输入，它总是返回相同的输出。
+
+让我们检查一下 `returnZeroFunc()`。它有副作用吗？好吧，我们仅仅确定调用 `returnZeroFunc()` 不会发射任何核导弹。除非你执行到调用返回的函数的额外步骤，否则什么都不会发生。所以，这没有副作用。
+
+`returnZeroFunc()` 是引用透明的吗？也就是说，给定相同的输入它是否总是返回相同的值？按照目前的编写方式，我们可以测试它：
+
+```js
+zeroFunc1 === zeroFunc2; // true
+zeroFunc2 === zeroFunc3; // true
+```
+
+但是这还不十分纯粹。我们的 `returnZeroFunc()` 函数引用了一个其作用域外的变量。为了解决这个问题，我们可以用以下方式重写：
+
+```js
+// returnZeroFunc :: () -> (() -> Number)
+function returnZeroFunc() {
+    function fZero() {
+        console.log('Launching nuclear missiles');
+        // Code to launch nuclear missiles goes here
+        return 0;
+    }
+    return fZero;
+}
+```
+
+现在我们的函数是纯的了。但是，JavaScript 在这里对我们有点不利。我们不能再用 === 来证实引用透明性了。这是因为 `returnZeroFunc()` 将总是返回一个新的函数引用。但是你可以通过检查代码来检验引用透明性。我们的 `returnZeroFunc()` 函数每次只返回同一个函数。
+
+这是一个整洁的（neat）小漏洞。但是我们真的能把它用于真正的代码吗？回答是肯定的。但是在我们讨论你如何在实践中做到这一点之前，让我们把这个想法推进一点。回到我们危险的 `fZero()` 函数：
+
+```js
+// fZero :: () -> Number
+function fZero() {
+    console.log('Launching nuclear missiles');
+    // Code to launch nuclear missiles goes here
+    return 0;
+}
+```
+
+让我们试着使用 `fZero()` 返回的零，但不要引发热核战争。
+
+我们将创建一个函数，它获取 `fZero()` 最终返回的零，并加 1：
+
+```js
+// fIncrement :: (() -> Number) -> Number
+function fIncrement(f) {
+    return f() + 1;
+}
+
+fIncrement(fZero);
+// ⦘ Launching nuclear missiles
+// ￩ 1
+```
+
+哎哟。我们意外地引发了热核战争。让我们再试一次。这次，我们不会返回一个数字。相反，我们将返回一个最终会返回一个数字的函数：
+
+```js
+// fIncrement :: (() -> Number) -> (() -> Number)
+function fIncrement(f) {
+    return () => f() + 1;
+}
+
+fIncrement(zero);
+// ￩ [Function]
+```
+
+唷。危机避免了。让我们继续。有了这两个函数，我们可以创建一大堆“最终数字”：
+
+```js
+const fOne   = fIncrement(zero);
+const fTwo   = fIncrement(one);
+const fThree = fIncrement(two);
+// And so on…
+```
+
+我们还可以创建一组 `f*` (函数)来处理最终的值：
+
+```js
+// fMultiply :: (() -> Number) -> (() -> Number) -> (() -> Number)
+function fMultiply(a, b) {
+    return () => a() * b();
+}
+
+// fPow :: (() -> Number) -> (() -> Number) -> (() -> Number)
+function fPow(a, b) {
+    return () => Math.pow(a(), b());
+}
+
+// fSqrt :: (() -> Number) -> (() -> Number)
+function fSqrt(x) {
+    return () => Math.sqrt(x());
+}
+
+const fFour = fPow(fTwo, fTwo);
+const fEight = fMultiply(fFour, fTwo);
+const fTwentySeven = fPow(fThree, fThree);
+const fNine = fSqrt(fTwentySeven);
+// No console log or thermonuclear war. Jolly good show!
+```
+
+你看到我们在这里做了什么吗？任何我们想用常规数字做的事情，我们都可以用最终数字来做。数学家称之为“[同构](https://en.wikipedia.org/wiki/Isomorphism)”。我们总是可以通过把一个常规数字插入一个函数，把它变成一个最终数字。通过调用函数，我们可以得到最终数字。换句话说，我们有一个数字和最终数字之间的映射。这比听起来更令人兴奋。我保证。我们很快就会回到这个概念。
+
+这个函数包装是一个合法的策略。只要我们愿意，我们可以一直隐藏背后的函数。只要我们从未真正调用过这些函数，它们理论上都是纯的。没有人会发动战争。在常规（无核）代码中，我们最终实际上想要这些副作用。将所有东西包装在一个函数中可以让我们精确地控制这些影响。我们明确地决定这些副作用何时发生。但是，到处敲这些括号是很痛苦的。并且创建每个函数的新版本很烦人。我们能使用如 `Math.sqrt()` 这样好用的语言内置函数。如果有一种方法可以将这些普通函数用于我们的延迟值，那就太好了。进入效果函子。
+
+# 效果函子（Effect Functor）
+
+对我们来说，效果函子只不过是一个对象，我们把延迟函数放在里面。所以，我们将把 `fZero` 函数放入一个效果对象中。但是，在此之前，让我们把压力降低一个等级：
+
+```js
+// zero :: () -> Number
+function fZero() {
+    console.log('Starting with nothing');
+    // Definitely not launching a nuclear strike here.
+    // But this function is still impure.
+    return 0;
+}
+```
+
+现在我们创建一个构造函数，为我们创建一个效果对象：
+
+```js
+// Effect :: Function -> Effect
+function Effect(f) {
+    return {};
+}
+```
+
+到目前为止没什么可看的。让我们使它做些有用的事情。我们想在我们的效果中使用常规的 `fZero()` 函数。我们将编写一个使用常规函数的方法，并最终将其应用于我们的延迟值。我们将执行这个方法但不触发其效果。我们称之为映射。这是因为它创建常规函数和效果函数之间的映射。它可能看起来像这样：
+
+```js
+// Effect :: Function -> Effect
+function Effect(f) {
+    return {
+        map(g) {
+            return Effect(x => g(f(x)));
+        }
+    }
+}
+```
+
+现在，如果你注意的话，你可能会想知道 `map()`。它看起来很可疑，比如构成方面。我们稍后再谈这个。现在，让我们试一试：
+
+```js
+const zero = Effect(fZero);
+const increment = x => x + 1; // A plain ol' regular function.
+const one = zero.map(increment);
+```
+
+嗯。我们真的没有办法看到发生了什么。让我们修改效果，这样我们就有办法“拉动触发器”，可以这么说：
+
+```js
+// Effect :: Function -> Effect
+function Effect(f) {
+    return {
+        map(g) {
+            return Effect(x => g(f(x)));
+        },
+        runEffects(x) {
+            return f(x);
+        }
+    }
+}
+
+const zero = Effect(fZero);
+const increment = x => x + 1; // Just a regular function.
+const one = zero.map(increment);
+
+one.runEffects();
+// ⦘ Starting with nothing
+// ￩ 1
+```
+
+如果我们愿意，我们可以持续调用映射函数：
+
+```js
+const double = x => x * 2;
+const cube = x => Math.pow(x, 3);
+const eight = Effect(fZero)
+    .map(increment)
+    .map(double)
+    .map(cube);
+
+eight.runEffects();
+// ⦘ Starting with nothing
+// ￩ 8
+```
+
+现在，这是它开始变得有趣的地方。我们称之为“函子（functor）”。这意味着效果有一个映射函数，它[遵守一些规则](https://github.com/fantasyland/fantasy-land#functor)。这些规则不是你不能做的事情的规则。它们是你能做的事情的规则。它们更像特权。因为效果是函子俱乐部的一部分，所以它会做一些特定的事情。其中之一被称为“合成法则”。事情是这样的：
+
+如果我们有一个效果 `e`，和两个函数 `f` 和 `g`。而 `e.map(g).map(f)` 等价于 `e.map(x => f(g(x)))`。
+
+换句话说，连续做两个映射相当于组合两个函数。这意味着效果可以做这样的事情（回想一下我们上面的例子）：
+
+```js
+const incDoubleCube = x => cube(double(increment(x)));
+// If we're using a library like Ramda or lodash/fp we could also write:
+// const incDoubleCube = compose(cube, double, increment);
+const eight = Effect(fZero).map(incDoubleCube);
+```
+
+当我们这样做的时候，我们保证会得到和三映射版本相同的结果。我们可以用它来重构我们的代码，以确信我们的代码不会被破坏。在某些情况下，我们甚至可以通过方法之间的交换来提高性能。
+
+与数字有关的示例已经够多了。让我们做一些更像“真实”代码做的事。
+
+# 制作效果的快捷方式
 
 
 
