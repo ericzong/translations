@@ -62,7 +62,7 @@ logSomething(d, console, something);
 
 现在，你也许会想：“这也太傻了。我们所做的只是把问题抛到了上一级。这仍然跟以前一样不纯粹。”你是对的。总体上说，这是一个漏洞。
 
-（https://youtu.be/9ZSoJDUD_bU [^T2]）
+[如果你被击中，那是你自己的错（辛普森一家）](https://youtu.be/9ZSoJDUD_bU) [^T2]
 
 这就像假装无知：“哦，不，警官，我不知道在那个“`cnsl`”对象上调用 `log()` 会执行 IO。其他人刚刚把它传给了我。我不知道它从哪里来。”这似乎有点蹩脚。
 
@@ -384,6 +384,41 @@ const eight = Effect(fZero).map(incDoubleCube);
 
 # 制作效果的快捷方式
 
+我们的效果构造函数以一个函数作为参数。这很方便，因为我们想要延迟的大多数副作用也是函数。例如，`Math.random()` 和 `console.log()` 都是这一类型的东西。但是有时我们想把一个简单的旧值加入到效果中。例如，想象我们在浏览器中将一些配置对象附加到全局窗口。我们想得到一个 a 值，但这不是一个纯粹的操作。我们可以写一个小快捷方式，让这项任务更容易：[^4]
+
+```js
+// of :: a -> Effect a
+Effect.of = function of(val) {
+    return Effect(() => val);
+}
+```
+
+为了展示这是多么方便，想象我们正在开发一个网络应用程序。该应用程序有一些标准特性，如文章列表和用户简历。但是在 HTML 中，这些组件为不同的客户带来了变化。因为我们是聪明的工程师，所以我们决定将他们的位置存储在一个全局配置对象中。这样我们总能找到他们。例如：
+
+```js
+window.myAppConf = {
+    selectors: {
+        'user-bio':     '.userbio',
+        'article-list': '#articles',
+        'user-name':    '.userfullname',
+    },
+    templates: {
+        'greet':  'Pleased to meet you, {name}',
+        'notify': 'You have {n} alerts',
+    }
+};
+```
+
+现在，通过我们的 `Effect.of()` 快捷方式，我们可以快速地将我们想要的值插入到一个效果包装器中，就像这样：
+
+```js
+const win = Effect.of(window);
+userBioLocator = win.map(x => x.myAppConf.selectors['user-bio']);
+// ￩ Effect('.userbio')
+```
+
+# 嵌套和非嵌套效果
+
 
 
 ---
@@ -391,6 +426,7 @@ const eight = Effect(fZero).map(incDoubleCube);
 [^1]: 这不是一个完整的定义，但目前可用。稍后我们将回到正式定义。
 [^2]: 在其他语言（比如 Haskell）中这称为 IO 函子或 IO 单体。[PureScript](http://www.purescript.org/) 使用了这项效果。我发现它更具描述性。
 [^3]: 熟悉类型签名的人请注意。如果我们是严格的，我们需要考虑副作用。我们稍后会讲到。
+[^4]: 请注意，不同的语言对此快捷方式有不同的名称。例如，在 Haskell 中，它被称为 `pure`。我不知道为什么。
 
 ---
 
