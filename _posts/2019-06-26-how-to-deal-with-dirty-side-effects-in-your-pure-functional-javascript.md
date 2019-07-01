@@ -3,9 +3,9 @@ layout: post
 title: 如何处理纯函数式JavaScript的不良副作用
 category: 编程语言
 tags: 语言 JS
-excerpt: 
+excerpt: 介绍JS相关的函数式编程以及其副作用的消除方法。
 author: Eric Zong
-date: 
+date: 2019-07-01 12:30
 ---
 
 * content
@@ -124,7 +124,7 @@ assert.strictEqual('mhatter', username, `Expected username to be ${username}`);
 
 如果我们愿意，我们可以继续把这种不可预测性推得越来越远。最终，我们将它们推到代码的最边缘。因此，我们最终得到了一个由不纯粹代码组成的薄壳，它包裹着一个经过良好测试的、可预测的内核。随着你开始构建更大的应用程序，可预测性开始变得重要许多。
 
-# 依赖注入的缺点
+## 依赖注入的缺点
 
 以这种方式创建大型的复杂应用程序是可能的。我知道因为我已经[做到了](https://www.squiz.net/technology/squiz-workplace)。测试变得容易，并且使得每个函数的依赖明确。但是，确实也有某些缺点。主要的缺点是，你最终会得到如下冗长的函数签名：
 
@@ -382,7 +382,7 @@ const eight = Effect(fZero).map(incDoubleCube);
 
 与数字有关的示例已经够多了。让我们做一些更像“真实”代码做的事。
 
-# 制作效果的快捷方式
+## 制作效果的快捷方式
 
 我们的效果构造函数以一个函数作为参数。这很方便，因为我们想要延迟的大多数副作用也是函数。例如，`Math.random()` 和 `console.log()` 都是这一类型的东西。但是有时我们想把一个简单的旧值加入到效果中。例如，想象我们在浏览器中将一些配置对象附加到全局窗口。我们想得到一个 a 值，但这不是一个纯粹的操作。我们可以写一个小快捷方式，让这项任务更容易：[^4]
 
@@ -417,18 +417,344 @@ userBioLocator = win.map(x => x.myAppConf.selectors['user-bio']);
 // ￩ Effect('.userbio')
 ```
 
-# 嵌套和非嵌套效果
+## 嵌套和非嵌套效果
+
+映射效果的内容让我们有很长的路要走。但是有时我们最终会映射一个也会返回效果的函数。我们已经定义了 `getElementLocator()`，它返回一个包含字符串的效果。如果我们确实想要定位 DOM 元素，那么我们需要调用 `document.querySelector()`——另一个不纯粹的函数。因此我们可以通过返回效果来使其纯粹：
+
+```js
+// $ :: String -> Effect DOMElement
+function $(selector) {
+    return Effect.of(document.querySelector(s));
+}
+```
+
+现在，如果我们想把这两个函数放到一起，我们可以尝试使用 `map()`：
+
+```js
+const userBio = userBioLocator.map($);
+// ￩ Effect(Effect(<div>))
+```
+
+现在我们有点尴尬。如果我们想要访问该 div，我们不得不映射一个映射我们实际想要做的事情的函数。例如，如果我们想获得 `innerHTML`，它将看起来像这样：
+
+```js
+const innerHTML = userBio.map(eff => eff.map(domEl => domEl.innerHTML));
+// ￩ Effect(Effect('<h2>User Biography</h2>'))
+```
+
+让我们尝试分开一点。我们将一直回到  `userBio` 并从那里前进。这将有点乏味，但我们想要弄清楚这里将会发生什么。我们一直在使用的符号，`Effect('user-bio')	` 是有一点误导人的。如果我们把它写成代码，它看起来更像是这样：
+
+```js
+Effect(() => '.userbio');
+```
+
+这也不准确。我们真正做的更像是：
+
+```js
+Effect(() => window.myAppConf.selectors['user-bio']);
+```
+
+现在，当我们映射时，这和用另一个函数组成内部函数一样（如我们上面所见）。因此，当我们用 `$` 映射时，看起来有点像这样：
+
+```js
+Effect(() => $(window.myAppConf.selectors['user-bio']));
+```
+
+展开我们能得到：
+
+```js
+Effect(
+    () => Effect.of(document.querySelector(window.myAppConf.selectors['user-bio'])))
+);
+```
+
+再展开 `Effect.of` 将给我们一个更清晰的画面：
+
+```js
+Effect(
+    () => Effect(
+        () => document.querySelector(window.myAppConf.selectors['user-bio'])
+    )
+);
+```
+
+注意：所有实际做事情的代码都在最里面的函数中。没有一个泄露到外部效果。
+
+### Join
+
+为什么要费心把这些拼写出来？嗯，我们想去嵌套这些嵌套效果。如果我们要这么做，我们要确保在这个过程中不会带来任何不必要的副作用。为了达到效果，去嵌套的方法就是在外部函数上调用 `.runEffects()`。但这可能会让人困惑。我们已经完成了整个练习，以检查我们不会运行任何效果。所以我们将创建另一个做同样事情的函数，并将其称为 `join`。当我们去消嵌套效果时，我们使用 `join`，当我们实际上想要运行效果时，我们使用 `runEffects()`。这表明我们的意图是明确的，即使我们运行的代码是相同的。
+
+```js
+// Effect :: Function -> Effect
+function Effect(f) {
+    return {
+        map(g) {
+            return Effect(x => g(f(x)));
+        },
+        runEffects(x) {
+            return f(x);
+        }
+        join(x) {
+            return f(x);
+        }
+    }
+}
+```
+
+然后，我们可以使用它来去嵌套我们的“用户传记”函数：
+
+```js
+const userBioHTML = Effect.of(window)
+    .map(x => x.myAppConf.selectors['user-bio'])
+    .map($)
+    .join()
+    .map(x => x.innerHTML);
+// ￩ Effect('<h2>User Biography</h2>')
+```
+
+### Chain
+
+这种在 `.join()` 后紧跟着执行 `.map()` 的模式经常出现。事实上，有一个快捷函数会很方便。这样，只要我们有一个返回效果的函数，我们就可以使用这个快捷方式。它保存了我们编写的 `map` 然后一遍遍地 `join`。我们会这样写：
+
+```js
+// Effect :: Function -> Effect
+function Effect(f) {
+    return {
+        map(g) {
+            return Effect(x => g(f(x)));
+        },
+        runEffects(x) {
+            return f(x);
+        }
+        join(x) {
+            return f(x);
+        }
+        chain(g) {
+            return Effect(f).map(g).join();
+        }
+    }
+}
+```
+
+我们称这个新函数为 `chain()` 因为它允许我们将效果链接在一起。（这也是因为标准告诉我们这样调用它。)[^5]我们获取“用户传记”内部 HTML 的代码看起来更像这样：
+
+```js
+const userBioHTML = Effect.of(window)
+    .map(x => x.myAppConf.selectors['user-bio'])
+    .chain($)
+    .map(x => x.innerHTML);
+// ￩ Effect('<h2>User Biography</h2>')
+```
+
+不幸的是，其他编程语言对此理念使用了许多不同的名称。如果你想了解它，可能会有点困惑。有时它叫做 `flatMap`。这个名字很有意义，因为我们正在做一个常规的映射，然后使用 `.join()` 使其扁平化。但是在 Haskell 中，它被赋予了一个令人困惑的名字 `bind`。因此，如果你在别处阅读，请记住 `chain`、`flatMap` 和 `bind` 是指类似的概念。
+
+## 合并效果
+
+还有最后一个场景，使用效果可能会有点尴尬。这就是我们想用一个函数组合两个或更多效果的地方。例如，如果我们想从 DOM 中获取用户名，会怎么样？然后将其插入到我们的应用程序配置提供的模板中？因此，我们可能有这样一个模板函数（请注意，我们正在创建一个柯里化[^6]版本）：
+
+```js
+// tpl :: String -> Object -> String
+const tpl = curry(function tpl(pattern, data) {
+    return Object.keys(data).reduce(
+        (str, key) => str.replace(new RegExp(`{${key}}`, data[key]),
+        pattern
+    );
+});
+```
+
+一切都很好。但是让我们来获取我们的数据：
+
+```js
+const win = Effect.of(window);
+const name = win.map(w => w.myAppConfig.selectors['user-name'])
+    .chain($)
+    .map(el => el.innerHTML)
+    .map(str => ({name: str});
+// ￩ Effect({name: 'Mr. Hatter'});
+
+const pattern = win.map(w => w.myAppConfig.templates('greeting'));
+// ￩ Effect('Pleased to meet you, {name}');
+```
+
+我们已经有了一个模板函数。它接受一个字符串和一个对象，并返回一个字符串。但是我们的字符串和对象（`name` 和 `pattern`）被包装在效果中。我们想做的是将我们的 `tpl()` 函数提升到一个更高的平面，这样它就可以与效果一起工作。 
+
+让我们先看看如果我们在模式效果上调用 `map()` 和 `tpl()` 会发生什么：
+
+```js
+pattern.map(tpl);
+// ￩ Effect([Function])
+```
+
+查看类型可能会让事情变得更清楚一点。映射的类型签名如下：
+
+map :: Effect a ~> (a -> b) -> Effect b
+
+我们的模板函数有如下签名：
+
+tpl :: String -> Object -> String
+
+因此，当我们调用模式上的映射时，我们会在一个效果中得到一个部分应用的函数（记住我们柯里化了 `tpl`）。
+
+Effect (Object -> String)
+
+我们现在想要从模式效果内部传递值。但是我们还没有办法做到这一点。我们将编写另一种效果方法（称为 `ap()`）来解决这个问题：
+
+```js
+// Effect :: Function -> Effect
+function Effect(f) {
+    return {
+        map(g) {
+            return Effect(x => g(f(x)));
+        },
+        runEffects(x) {
+            return f(x);
+        }
+        join(x) {
+            return f(x);
+        }
+        chain(g) {
+            return Effect(f).map(g).join();
+        }
+        ap(eff) {
+             // If someone calls ap, we assume eff has a function inside it (rather than a value).
+            // We'll use map to go inside off, and access that function (we'll call it 'g')
+            // Once we've got g, we apply the value inside off f() to it
+            return eff.map(g => g(f()));
+        }
+    }
+}
+```
+
+有了这个，我们就可以执行 `.ap()` 来应用我们的模板了：
+
+```js
+const win = Effect.of(window);
+const name = win.map(w => w.myAppConfig.selectors['user-name'])
+    .chain($)
+    .map(el => el.innerHTML)
+    .map(str => ({name: str}));
+
+const pattern = win.map(w => w.myAppConfig.templates('greeting'));
+
+const greeting = name.ap(pattern.map(tpl));
+// ￩ Effect('Pleased to meet you, Mr Hatter')
+```
+
+我们已经实现了我们的目标。但是我要坦白……问题是，我发现 `ap()` 有时会令人感到困惑。很难记得我必须先映射函数，然后再运行 `ap()`。然后我忘记了参数应用的顺序。但是有办法解决这个问题。大多数时候，我想做的是把一个普通的函数提升到应用的世界。也就是说，我有一些简单的函数，我想让它们和带有 `.ap()` 方法的效果一起工作。我们可以为自己编写一个函数：
+
+```js
+// liftA2 :: (a -> b -> c) -> (Applicative a -> Applicative b -> Applicative c)
+const liftA2 = curry(function liftA2(f, x, y) {
+    return y.ap(x.map(f));
+    // We could also write:
+    //  return x.map(f).chain(g => y.map(g));
+});
+```
+
+我们称之为 `liftA2()`，因为它提升了一个包含两个参数的函数。我们也可以像这样写一个 `liftA3()`：
+
+```js
+// liftA3 :: (a -> b -> c -> d) -> (Applicative a -> Applicative b -> Applicative c -> Applicative d)
+const liftA3 = curry(function liftA3(f, a, b, c) {
+    return c.ap(b.ap(a.map(f)));
+});
+```
+
+请注意，`liftA2` 和 `liftA3` 从未提及效果。理论上，它们可以与任何具有兼容的 `ap()` 方法的对象一起工作。 
+
+使用 `liftA2()`，我们可以将上面的示例重写如下：
+
+```js
+const win = Effect.of(window);
+const user = win.map(w => w.myAppConfig.selectors['user-name'])
+    .chain($)
+    .map(el => el.innerHTML)
+    .map(str => ({name: str});
+
+const pattern = win.map(w => w.myAppConfig.templates['greeting']);
+
+const greeting = liftA2(tpl)(pattern, user);
+// ￩ Effect('Pleased to meet you, Mr Hatter')
+```
+
+# 这又怎样？
+
+在这一点上，你可能会想，“这似乎需要付出很大的努力才能避免偶尔出现的奇怪副作用。”这有什么关系？把东西放在效果里，并且让我们的头部包裹在 `ap()` 中看起来很困难。当不纯粹的代码运行良好时，为什么还要费心呢？你在现实世界中什么时候会需要这个？
+
+> 这个函数式程序员听起来相当像一个中世纪的僧侣，否认自己生活的乐趣，希望这能让他变得高尚。 
+>
+> ——约翰·雨果[^7]
+
+让我们把这些异议分成两个问题：
+
+1. 函数的纯粹性真的重要吗？
+2. 这种效果在现实世界中什么时候有用？
+
+## 函数的纯粹性很重要
+
+这是真的。当你孤立地看待一个小函数时，一点点不纯粹并不重要。编写 `const pattern = window.myAppConfig.templates['greeting'];` 比下面这样更快更简单：
+
+```js
+const pattern = Effect.of(window).map(w => w.myAppConfig.templates('greeting'));
+```
+
+如果这就是你所做的一切，那也是事实。副作用没关系。但这只是一行代码——在一个可能包含数千甚至数百万行代码的应用程序中。当你试图弄清楚为什么你的应用程序莫名其妙地停止工作时，函数的纯粹性开始变得更加重要。意想不到的事情发生了。你试图把问题分解开来，找出原因。在这种情况下，你能排除的代码越多越好。如果你的函数是纯粹的，那么你可以确信影响它们行为的唯一东西是传递给它的输入。这大大减少了你需要考虑的事情的数量。换句话说，它让你少思考。在大型复杂的应用程序中，这是一件大事。
+
+## 现实世界中的效果模式
+
+好吧。如果你正在构建一个大型复杂的应用程序，也许函数的纯粹性很重要。比如像脸书或者谷歌邮箱。但是如果你不这么做呢？让我们考虑一个将变得越来越普遍的场景。你有一些数据。不仅仅是一点点数据，而是很多数据。数百万行，在 <abbr title='Comma Separated Values'>CSV</abbr> 文本文件或巨大的数据库表中。你的任务是处理这些数据。也许你正在训练一个人工神经网络来建立一个推理模型。也许你正试图弄清楚下一个大型加密货币的进展。无论如何。问题是，完成这项工作需要大量的处理工作。
+
+乔尔·斯波尔斯基（Joel Spolsky）令人信服地认证了，[函数式编程可以帮助我们](https://www.joelonsoftware.com/2006/08/01/can-your-programming-language-do-this/)。我们可以编写 `map` 和 `reduce` 并行运行的替代版本。函数的纯粹性使这成为可能。但这不是故事的结局。当然，你可以写一些奇特的并行处理代码。但是即使这样，你的开发机器仍然只有 4 个内核（或者如果你幸运的话，可能有 8 或 16 个）。那项工作仍然需要很长时间。除非，也就是说，你可以在一堆处理器上运行它……比如一个 GPU，或者整个集群的处理服务器。
+
+为了使这一点有效，你需要描述你想要运行的计算。但是，你想描述它们而不是实际运行它们。听起来熟悉吗？理想情况下，你可以将描述传递给某种框架。该框架将负责读入所有数据，并分割给处理节点。然后，相同的框架将把结果收集到一起，并告诉你进展如何。TensorFlow 就是这样工作的。
+
+> TensorFlow 是一个开源软件库，用于高性能数值计算。其灵活的体系结构允许跨多种平台（CPU、GPU、TPU）轻松部署计算，从台式机到服务器集群，再到移动和边缘设备。最初是由谷歌人工智能组织内的谷歌大脑团队的研究人员和工程师开发的，它对机器学习和深度学习有强大的支持，灵活的数值计算核心被用于许多其他科学领域。 
+>
+> —TensorFlow 主页[^8]
+
+当你使用 TensorFlow 时，你不会使用你正在编写的编程语言中的常规数据类型。相反，你创造了“张量（tensor）”。如果我们想将两个数字相加，它应该是这样的：
+
+```js
+node1 = tf.constant(3.0, tf.float32)
+node2 = tf.constant(4.0, tf.float32)
+node3 = tf.add(node1, node2)
+```
+
+上面的代码是用 Python 编写的，但是它看起来和 JavaScript 没什么不同，是吗？就像我们的效果一样，`add` 代码直到我们告诉它运行（在这种情况下使用 `sess.run()`）才会运行：
+
+```js
+print("node3: ", node3)
+print("sess.run(node3): ", sess.run(node3))
+# ⦘ node3:  Tensor("Add_2:0", shape=(), dtype=float32)
+# ⦘ sess.run(node3):  7.0
+```
+
+直到我们调用 `sess.run()` 我们才会得到7.0。如你所见，这和我们的延迟函数非常相似。我们提前计划好了我们的计算。然后，一旦我们准备好了，我们就扣动扳机开始一切。
+
+# 总结
+
+我们已经覆盖了很多内容。并且我们已经探索了两种方法来处理代码中的函数不纯粹性：
+
+1. 依赖注入；
+2. 效果函子。
+
+依赖注入通过将代码中不纯粹的部分移出函数来工作。所以你必须把它们作为参数传入。相比之下，效果函子的工作原理是将所有东西都包装在一个函数后面。为了运行这些效果，我们必须特意运行包装函数。
+
+这两种方法都是欺骗。它们没有完全清除不纯粹性，只是把它们推到我们代码的边缘。但这是一件好事。它明确了代码的哪些部分是不纯粹的。当试图在复杂的代码库中调试问题时，这可能是一个真正的优势。
 
 
-
----
 
 [^1]: 这不是一个完整的定义，但目前可用。稍后我们将回到正式定义。
 [^2]: 在其他语言（比如 Haskell）中这称为 IO 函子或 IO 单体。[PureScript](http://www.purescript.org/) 使用了这项效果。我发现它更具描述性。
 [^3]: 熟悉类型签名的人请注意。如果我们是严格的，我们需要考虑副作用。我们稍后会讲到。
 [^4]: 请注意，不同的语言对此快捷方式有不同的名称。例如，在 Haskell 中，它被称为 `pure`。我不知道为什么。
+[^5]: 在这种情况下，标准是 [Fantasy Land specification for Chain](https://github.com/fantasyland/fantasy-land#chain)。
+[^6]: 如果你以前没见过柯里化，看看《[A Gentle Introduction to Functional Programming in JavaScript](https://jrsinclair.com/articles/2016/gentle-introduction-to-functional-javascript-functions/#currying)》的第 4 部分。
+[^7]: 约翰·休斯，1990，《为什么函数式编程很重要》，函数式编程的研究课题编辑。杜纳，爱迪生-韦斯利，第17-42 页，<https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf>
+
+[^8]: TensorFlow<sup>TM</sup>：面向所有人的开源机器学习框架，https://www.tensorflow.org/，2018 年 5 月 12 日。
 
 ---
 
-[^T1]: 引用透明（referential transparency），指的是函数的运行不依赖于外部变量或"状态"，只依赖于输入的参数，任何时候只要参数相同，引用函数所得到的返回值总是相同的。
-[^T2]: 原文插入了一个视频……
+[^T1]: 【译者注】引用透明（referential transparency），指的是函数的运行不依赖于外部变量或"状态"，只依赖于输入的参数，任何时候只要参数相同，引用函数所得到的返回值总是相同的。
+[^T2]: 【译者注】原文插入了一个视频……
