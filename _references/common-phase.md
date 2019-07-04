@@ -93,6 +93,7 @@ author: "Eric Zong"
 | URL                                            | Uniform Resource   Locator                           | 统一资源定位符                 |                                                              |
 | W3C                                            | World Wide Web   Consortium                          | 万维网联盟                     |                                                              |
 | WHATWG                                         | Web Hypertext   Application Technology Working Group |                                |                                                              |
+| XHTML                                          | Extensible HyperText Markup Language                 | 可扩展超文本标记语言           |                                                              |
 | XSS                                            | cross-site-scripting                                 | 跨站脚本                       | XSS attacks 跨站脚本攻击                                     |
 | IOPS                                           | Input/Output   Operations Per Second                 | 每秒进行读写操作的次数         | 存储设备性能                                                 |
 
