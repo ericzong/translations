@@ -27,6 +27,8 @@ url: "https://github.com/ericzong/Translations" # the base hostname & protocol f
 collections:
   references:
     output: true
+  docs:
+    output: true
 
 # ----- system config -----
 # port: 
