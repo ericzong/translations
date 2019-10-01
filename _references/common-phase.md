@@ -13,38 +13,58 @@ author: "Eric Zong"
 <dl>
     <dt>to avoid the pitfalls of ...</dt>
     <dd>为了避免...的陷阱</dd>
+    <!-- seperator -->
     <dt>on the contrary</dt>
     <dd>相反</dd>
+    <!-- seperator -->
     <dt>for the sake of</dt>
     <dd>为了</dd>
     <dd>~ security</dd>
+    <!-- seperator -->
     <dt>as a reminder</dt>
     <dd>在此提醒</dd>
+    <!-- seperator -->
     <dt>in a nutshell</dt>
     <dd>简而言之；用简明的话</dd>
     <dd>To put it <mark>in a nutshell</mark>, we're bankrupt.</dd>
     <dd><mark>In a nutshell</mark>, named function expressions are useful for one thing only — descriptive function names in debuggers and profilers.</dd>
+    <!-- seperator -->
     <dt>last but not least</dt>
     <dd>最后但同样重要的</dd>
+    <!-- seperator -->
     <dt>best bet</dt>
     <dd>最好的办法；最好的措施</dd>
     <dd>So if you want to extend Casper capabilities for your tests, your <mark>best bet</mark> is to write your own runner and extend the casper object instance from there.</dd>
+    <!-- seperator -->
     <dt>It is worth noting that ...</dt>
     <dd>值得注意的是</dd>
     <dd><mark>It is worth noting that</mark> this is probably not the best of ideas.</dd>
+    <!-- seperator -->
     <dt>boil down to</dt>
     <dd>归结为</dd>
     <dd>The reasons for this are complex, but <mark>boil down to</mark> two main causes.</dd>
+    <!-- seperator -->
     <dt>For instance</dt>
     <dd>例如</dd>
+    <!-- seperator -->
     <dt>For this purpose</dt>
     <dd>为此；为了这个目的</dd>
+    <!-- seperator -->
     <dt>on a regular basis</dt>
     <dd>定期地；经常地</dd>
     <dd>We scheduled integration builds to piece developer components together <mark>on a regular basis</mark>. </dd>
+    <!-- seperator -->
     <dt>It appears that ...</dt>
     <dd>似乎；看来</dd>
     <dd><mark>It appears that</mark> ECMAScript differentiates between two based on a context.</dd>
+    <!-- seperator -->
+    <dt>in terms of</dt>
+    <dd>就……而言</dd>
+    <dd>Notice that <mark>in terms of</mark> variables lifecycle, declaration phase is a different term than generally speaking variable declaration. </dd>
+    <!-- seperator -->
+    <dt>in simple words</dt>
+    <dd>简单来说，简而言之</dd>
+    <dd><mark>In simple words</mark>, the engine processes the variable declaration in 3 phases: declaration phase, initialization phase and assignment phase.</dd>
 </dl>
 
 
