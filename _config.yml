@@ -29,6 +29,8 @@ collections:
     output: true
   docs:
     output: true
+  skills:
+    output: true
 
 # ----- system config -----
 # port: 
