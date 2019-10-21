@@ -144,6 +144,7 @@ author: "Eric Zong"
 | rolling up                    | 上卷                                                         |                                                              |
 | convention over configuration | 约定优于配置                                                 |                                                              |
 | functional/acceptance test    | 功能/验收测试                                                | /ə<mark>k</mark>'səptəns/                                    |
+| evaluated expression          | 求值表达式                                                   |                                                              |
 
 # 文档惯用语
 
