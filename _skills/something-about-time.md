@@ -8,6 +8,15 @@ author: "Eric Zong"
 
 * content
 {:toc}
+# 常用词汇
+
+| 英文        | 中文 | 英文        | 中文 | 英文       | 中文 |
+| ----------- | ---- | ----------- | ---- | ---------- | ---- |
+| century     | 世纪 | year        | 年   | month      | 月   |
+| quarter     | 季度 | week        | 周   | day        | 天   |
+| hour        | 时   | minute      | 分   | second     | 秒   |
+| millisecond | 毫秒 | microsecond | 微秒 | nanosecond | 纳秒 |
+| picosecond  | 皮秒 | femtosecond | 飞秒 |            |      |
 
 # 月份
 
@@ -18,7 +27,7 @@ author: "Eric Zong"
 | July    | 七月 | August   | 八月   | September | 九月   |
 | October | 十月 | November | 十一月 | December  | 十二月 |
 
-## 特殊含义
+# 特殊含义
 
 | 英文                            | 中文                       | 说明                               |
 | ------------------------------- | -------------------------- | ---------------------------------- |
@@ -26,7 +35,7 @@ author: "Eric Zong"
 | April Fool                      | 愚人节被愚弄的人           |                                    |
 | April Fool's Day/All Fool's Day | 愚人节                     |                                    |
 
-## 介词的使用
+# 介词的使用
 
 | <nobr>介词</nobr> | 说明                                     | 示例                                                         |
 | ----------------- | ---------------------------------------- | ------------------------------------------------------------ |
