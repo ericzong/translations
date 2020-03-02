@@ -27,13 +27,33 @@ author: "Eric Zong"
 | July    | 七月 | August   | 八月   | September | 九月   |
 | October | 十月 | November | 十一月 | December  | 十二月 |
 
-# 特殊含义
+## 特殊含义
 
 | 英文                            | 中文                       | 说明                               |
 | ------------------------------- | -------------------------- | ---------------------------------- |
 | March hare                      | 三月兔；发情期；疯狂的兔子 | 三月是兔子的发情期，因此变得“疯狂” |
 | April Fool                      | 愚人节被愚弄的人           |                                    |
 | April Fool's Day/All Fool's Day | 愚人节                     |                                    |
+
+# 季节
+
+| 英文        | 中文 | 英文   | 中文 |
+| ----------- | ---- | ------ | ---- |
+| spring      | 春   | summer | 夏   |
+| fall/autumn | 秋   | winter | 冬   |
+
+# 星期
+
+| 英文      | 中文   | 英文     | 中文   |
+| --------- | ------ | -------- | ------ |
+| Monday    | 星期一 | Tuesday  | 星期二 |
+| Wednesday | 星期三 | Thursday | 星期四 |
+| Friday    | 星期五 | Saturday | 星期六 |
+| Sunday    | 星期天 | weekend  | 周末   |
+
+# 一天
+
+yesterday, tomorrow, morning, noon, noonday, afternoon, evening, night
 
 # 介词的使用
 
